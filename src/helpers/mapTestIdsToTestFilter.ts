@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import { ITestFilter } from "../types";
 import escapeRegExp from "./escapeRegExp";
-import { mapStringToId, Id } from "./idMaps";
+import { mapStringToId, mapIdToEscapedRegExpId, Id } from "./idMaps";
 
-function mapTestIdsToTestNamePattern(test: Id): string {
+function mapTestIdToTestNamePattern(test: Id): string {
   // Jest test names are a concatenation of the describeIds and testId, separated by space
   return (test.describeIds || []).concat(test.testId || '')
     .filter(testPart => testPart)
@@ -16,7 +16,7 @@ export function mapTestIdsToTestFilter(tests: string[]): ITestFilter | null {
     return null;
   }
 
-  const ids = tests.map(t => mapStringToId(t));
+  const ids = tests.map(mapStringToId).map(mapIdToEscapedRegExpId);
 
   // if there are any ids that do not contain a fileName, then we should run all the tests in the project.
   if (_.some(ids, x => !x.fileName)) {
@@ -25,10 +25,10 @@ export function mapTestIdsToTestFilter(tests: string[]): ITestFilter | null {
 
   // we accumulate the file and test names into regex expressions.  Note we escape the names to avoid interpreting
   // any regex control characters in the file or test names.
-  const testNamePattern = ids.map(mapTestIdsToTestNamePattern)
+  const testNamePattern = ids.map(id => mapTestIdToTestNamePattern(id))
     .filter(testId => testId)
     .join("|");
-  const testFileNamePattern = ids.filter(x => x.fileName).map(z => escapeRegExp(z.fileName || "")).join("|");
+  const testFileNamePattern = ids.filter(x => x.fileName).map(z => z.fileName || "").join("|");
 
   return {
     testFileNamePattern,

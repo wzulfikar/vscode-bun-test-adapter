@@ -1,4 +1,4 @@
-import { mapStringToId } from '../idMaps';
+import { mapStringToId, mapIdToString, mapIdToEscapedRegExpId } from '../idMaps';
 import { DESCRIBE_ID_SEPARATOR, PROJECT_ID_SEPARATOR, TEST_ID_SEPARATOR } from "../../constants";
 
 const PS = PROJECT_ID_SEPARATOR;
@@ -94,6 +94,89 @@ describe('mapStringToId', () => {
       fileName: undefined,
       describeIds: undefined,
       testId: undefined
+    });
+  });
+});
+
+describe('mapIdToString', () => {
+  describe('round-trip tests', () => {
+    it('results in the same id when mapping to string and back', () => {
+      const originalId = {
+        projectId: 'someProject',
+        fileName: 'someFile',
+        describeIds: ['outerDescribe', 'innerDescribe'],
+        testId: 'aTest'
+      };
+
+      const roundTrip = mapStringToId(mapIdToString(originalId));
+
+      expect(roundTrip).toEqual(originalId);
+    });
+
+    it('does not lose special characters', () => {
+      const originalId = {
+        projectId: 'some.Pr*jec?',
+        fileName: 'some-file.js',
+        describeIds: ['[brackets]and(parenthesis)', '^start|end$'],
+        testId: '+{more}\\'
+      };
+
+      const roundTrip = mapStringToId(mapIdToString(originalId));
+
+      expect(roundTrip).toEqual(originalId);
+    });
+
+    it('works when no test', () => {
+      const originalId = {
+        projectId: 'someProject',
+        fileName: 'someFile',
+        describeIds: ['outerDescribe', 'innerDescribe']
+      };
+
+      const roundTrip = mapStringToId(mapIdToString(originalId));
+
+      expect(roundTrip).toEqual(originalId);
+    });
+
+    it('works when no describes', () => {
+      const originalId = {
+        projectId: 'someProject',
+        fileName: 'someFile'
+      };
+
+      const roundTrip = mapStringToId(mapIdToString(originalId));
+
+      expect(roundTrip).toEqual(originalId);
+    });
+
+    it('works when no file', () => {
+      const originalId = {
+        projectId: 'someProject'
+      };
+
+      const roundTrip = mapStringToId(mapIdToString(originalId));
+
+      expect(roundTrip).toEqual(originalId);
+    });
+  });
+});
+
+describe('mapIdToEscapedRegExpId', () => {
+  it('escapes regex special characters', () => {
+    const unescaped = {
+      projectId: 'some.Pr*jec?',
+      fileName: 'some-file.js',
+      describeIds: ['[brackets]and(parenthesis)', '^start|end$'],
+      testId: '+{more}\\'
+    };
+
+    const escaped = mapIdToEscapedRegExpId(unescaped);
+
+    expect(escaped).toEqual({
+      projectId: 'some\\.Pr\\*jec\\?',
+      fileName: 'some-file\\.js',
+      describeIds: ['\\[brackets\\]and\\(parenthesis\\)', '\\^start\\|end\\$'],
+      testId: '\\+\\{more\\}\\\\'
     });
   });
 });

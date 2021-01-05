@@ -1,4 +1,5 @@
 import { DESCRIBE_ID_SEPARATOR, PROJECT_ID_SEPARATOR, TEST_ID_SEPARATOR } from "../constants";
+import escapeRegExp from "./escapeRegExp";
 
 interface Id {
   projectId: string;
@@ -44,11 +45,29 @@ const mapStringToId = (id: string): Id => {
       .split(`${DESCRIBE_ID_SEPARATOR}${DESCRIBE_ID_SEPARATOR}`);
 
   return {
-    describeIds: describeIds.length ? describeIds : undefined,
-    fileName,
     projectId,
+    fileName,
+    describeIds: describeIds.length ? describeIds : undefined,
     testId
   };
 };
 
-export { mapIdToString, mapStringToId, Id };
+const mapIdToEscapedRegExpId =  (id: Id): Id => {
+  return {
+    projectId: escapeRegExp(id.projectId),
+
+    fileName: (id.fileName === undefined
+      ? undefined
+      : escapeRegExp(id.fileName)),
+
+    describeIds: (id.describeIds === undefined
+      ? undefined
+      : id.describeIds.map(escapeRegExp)),
+
+    testId: (id.testId === undefined
+      ? ''
+      : escapeRegExp(id.testId))
+  };
+}
+
+export { mapIdToString, mapStringToId, mapIdToEscapedRegExpId, Id };
