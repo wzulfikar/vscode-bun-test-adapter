@@ -181,7 +181,6 @@ describe('filterTree', () => {
         expect(filteredTree).toMatchObject(expectedFilteredTree);
       });
 
-      // Currently failing
       it('given file id, matches test', () => {
         const testNames = [
           mapIdToString({
@@ -534,7 +533,6 @@ describe('filterTree', () => {
         });
       });
 
-      // Currently failing
       it('given file id, matches all tests in file', () => {
         const testNames = [
           mapIdToString({
@@ -599,7 +597,6 @@ describe('filterTree', () => {
         });
       });
 
-      // Currently failing
       it('given project id, matches all tests in project', () => {
         const testNames = [
           mapIdToString({
