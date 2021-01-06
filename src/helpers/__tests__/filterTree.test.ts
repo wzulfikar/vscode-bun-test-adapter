@@ -539,8 +539,7 @@ describe('filterTree', () => {
         const testNames = [
           mapIdToString({
             projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe']
+            fileName: `${ROOT_PATH}/some-file.js`
           })
         ];
 
@@ -604,9 +603,7 @@ describe('filterTree', () => {
       it('given project id, matches all tests in project', () => {
         const testNames = [
           mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe']
+            projectId: PROJECT_NAME
           })
         ];
 
@@ -666,9 +663,7 @@ describe('filterTree', () => {
                 describeBlocks: [],
                 label: "innerDescribe",
                 tests: [
-                  { label: "someTest" },
-                  { label: "someTest2" },
-                  { label: "otherTest" }
+                  { label: "someTest" }
                 ]
               }],
               label: "someDescribe",
