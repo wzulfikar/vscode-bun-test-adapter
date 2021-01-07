@@ -15,10 +15,10 @@ import {
 
 const mergeRuntimeResults = (tree: ProjectRootNode, testResults: JestFileResults[]): ProjectRootNode => {
   const filesUpdate = (files: Array<FileNode | FileWithParseErrorNode>) => {
-    return files.map(f => {
-      const result = testResults.filter(x => lowerCaseDriveLetter(x.name) === f.file)[0];
+    return files.map(file => {
+      const result = testResults.filter(x => lowerCaseDriveLetter(x.name) === file.file)[0];
       if (!result) {
-        return f;
+        return file;
       }
 
       const processDescribes = (
@@ -33,9 +33,9 @@ const mergeRuntimeResults = (tree: ProjectRootNode, testResults: JestFileResults
           if (match) {
             return describeBlocks.map(x => (x === match ? processFileOrDescribe(x, others, assertion) : x));
           } else {
-            const id = `${parentId}${DESCRIBE_ID_SEPARATOR}${describeName}`;
+            const id = `${parentId}${DESCRIBE_ID_SEPARATOR}${describeName}${DESCRIBE_ID_SEPARATOR}`;
             return describeBlocks.concat(
-              processFileOrDescribe(createDescribeNode(id, describeName, f.file, undefined, true), others, assertion),
+              processFileOrDescribe(createDescribeNode(id, describeName, file.file, undefined, true), others, assertion),
             );
           }
         }
@@ -66,8 +66,8 @@ const mergeRuntimeResults = (tree: ProjectRootNode, testResults: JestFileResults
 
       const processTests = (parentId: string, tests: TestNode[], assertion: JestAssertionResults): TestNode[] => {
         if (!_.some(tests, t => t.label === assertion.title)) {
-          const id = `${parentId}${TEST_ID_SEPARATOR}${assertion.title}`;
-          const newTest = createTestNode(id, assertion.title, f.file, undefined, true);
+          const id = `${parentId}${TEST_ID_SEPARATOR}${assertion.title}${TEST_ID_SEPARATOR}`;
+          const newTest = createTestNode(id, assertion.title, file.file, undefined, true);
           return tests.concat(newTest);
         }
         return tests;
@@ -75,7 +75,7 @@ const mergeRuntimeResults = (tree: ProjectRootNode, testResults: JestFileResults
 
       return result.assertionResults.reduce(
         (acc, current) => processFileOrDescribe(acc, current.ancestorTitles ?? [], current),
-        f,
+        file,
       );
     });
   };

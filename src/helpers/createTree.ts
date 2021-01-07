@@ -179,7 +179,7 @@ const mergeDescribeBlocksAndTests = (itBlocks: ItBlock[], describeBlocks: Descri
 };
 
 const createDescribeNode = (d: Describe, parentId: string, file: string, runtimeDiscovered: boolean): DescribeNode => {
-  const expectedDescribeBlockId = `${parentId}${DESCRIBE_ID_SEPARATOR}${d.name}`;
+  const expectedDescribeBlockId = `${parentId}${DESCRIBE_ID_SEPARATOR}${d.name}${DESCRIBE_ID_SEPARATOR}`;
   return {
     describeBlocks: d.describeBlocks.map(x => createDescribeNode(x, expectedDescribeBlockId, file,runtimeDiscovered)),
     file,
@@ -193,7 +193,7 @@ const createDescribeNode = (d: Describe, parentId: string, file: string, runtime
 };
 
 const createTestNode = (t: ItBlock, parentId: string, file: string, runtimeDiscovered: boolean): TestNode => {
-  const expectedTestId = `${parentId}${TEST_ID_SEPARATOR}${t.name}`;
+  const expectedTestId = `${parentId}${TEST_ID_SEPARATOR}${t.name}${TEST_ID_SEPARATOR}`;
   return {
     file,
     id: expectedTestId,
