@@ -1,5 +1,5 @@
 import { DESCRIBE_ID_SEPARATOR, PROJECT_ID_SEPARATOR, TEST_ID_SEPARATOR } from "../constants";
-import escapeRegExp from "./escapeRegExp";
+import { escapeRegExp } from "./escapeRegExp";
 
 interface Id {
   projectId: string;

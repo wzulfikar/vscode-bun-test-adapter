@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { ITestFilter } from "../types";
-import escapeRegExp from "./escapeRegExp";
+import { escapeRegExp } from "./escapeRegExp";
 import { mapStringToId, mapIdToEscapedRegExpId, Id } from "./idMaps";
 
 function mapTestIdToTestNamePattern(test: Id): string {
