@@ -52,11 +52,32 @@ const NON_NUMERICS = [
   ...JSON_STRINGS,
   ...OBVIOUS_INVALID_JSON_STRINGS
 ];
+const PRINTF_PATTERNS = [
+  '%#',
+  '%i',
+  '%d',
+  '%f',
+  '%j',
+  '%p',
+  '%s',
+  '%o',
+  '%%',
+  '%c'
+];
 
 describe('replacePrintfPatterns', () => {
   describe('replaces %#', () => {
-    const pattern = replacePrintfPatterns('%#');
+    const placeholder = '%#';
+    const pattern = replacePrintfPatterns(placeholder);
     const regex = new RegExp(`^${pattern}$`);
+    
+    it('matches itself', () => {
+      expect(regex.test(placeholder)).toBeTrue();
+    });
+
+    it.each(PRINTF_PATTERNS.filter(otherPlaceholder => otherPlaceholder !== placeholder))('does NOT match other printf patterns (%s)', (otherPlaceholder) => {
+      expect(regex.test(otherPlaceholder)).toBeFalse();
+    });
 
     it.each(POSITIVE_WHOLE_NUMBERS)('matches positive whole numbers (%s)', (value) => {
       expect(regex.test(value)).toBeTrue();
@@ -92,8 +113,17 @@ describe('replacePrintfPatterns', () => {
   });
 
   describe('replaces %i', () => {
-    const pattern = replacePrintfPatterns('%i');
+    const placeholder = '%i';
+    const pattern = replacePrintfPatterns(placeholder);
     const regex = new RegExp(`^${pattern}$`);
+    
+    it('matches itself', () => {
+      expect(regex.test(placeholder)).toBeTrue();
+    });
+
+    it.each(PRINTF_PATTERNS.filter(otherPlaceholder => otherPlaceholder !== placeholder))('does NOT match other printf patterns (%s)', (otherPlaceholder) => {
+      expect(regex.test(otherPlaceholder)).toBeFalse();
+    });
 
     it.each(POSITIVE_WHOLE_NUMBERS)('matches positive whole numbers (%s)', (value) => {
       expect(regex.test(value)).toBeTrue();
@@ -131,6 +161,14 @@ describe('replacePrintfPatterns', () => {
   ['%d', '%f'].forEach(placeholder => describe(`replaces ${placeholder}`, () => {
     const pattern = replacePrintfPatterns(placeholder);
     const regex = new RegExp(`^${pattern}$`);
+    
+    it('matches itself', () => {
+      expect(regex.test(placeholder)).toBeTrue();
+    });
+
+    it.each(PRINTF_PATTERNS.filter(otherPlaceholder => otherPlaceholder !== placeholder))('does NOT match other printf patterns (%s)', (otherPlaceholder) => {
+      expect(regex.test(otherPlaceholder)).toBeFalse();
+    });
 
     it.each(POSITIVE_WHOLE_NUMBERS)('matches positive whole numbers (%s)', (value) => {
       expect(regex.test(value)).toBeTrue();
@@ -168,6 +206,14 @@ describe('replacePrintfPatterns', () => {
   ['%p', '%s', '%o'].forEach(placeholder => describe(`replaces ${placeholder}`, () => {
     const pattern = replacePrintfPatterns(placeholder);
     const regex = new RegExp(`^${pattern}$`);
+    
+    it('matches itself', () => {
+      expect(regex.test(placeholder)).toBeTrue();
+    });
+
+    it.each(PRINTF_PATTERNS.filter(otherPlaceholder => otherPlaceholder !== placeholder))('matches other printf patterns (%s)', (otherPlaceholder) => {
+      expect(regex.test(otherPlaceholder)).toBeTrue();
+    });
 
     it.each(POSITIVE_WHOLE_NUMBERS)('matches positive whole numbers (%s)', (value) => {
       expect(regex.test(value)).toBeTrue();
@@ -203,8 +249,17 @@ describe('replacePrintfPatterns', () => {
   }));
 
   describe('replaces %j', () => {
-    const pattern = replacePrintfPatterns('%j');
+    const placeholder = '%j';
+    const pattern = replacePrintfPatterns(placeholder);
     const regex = new RegExp(`^${pattern}$`);
+    
+    it('matches itself', () => {
+      expect(regex.test(placeholder)).toBeTrue();
+    });
+
+    it.each(PRINTF_PATTERNS.filter(otherPlaceholder => otherPlaceholder !== placeholder))('does NOT match other printf patterns (%s)', (otherPlaceholder) => {
+      expect(regex.test(otherPlaceholder)).toBeFalse();
+    });
 
     it.each(POSITIVE_WHOLE_NUMBERS)('matches positive whole numbers (%s)', (value) => {
       expect(regex.test(value)).toBeTrue();
