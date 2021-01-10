@@ -65,7 +65,7 @@ const mapIdToEscapedRegExpId =  (id: Id): Id => {
       : id.describeIds.map(escapeRegExp)),
 
     testId: (id.testId === undefined
-      ? ''
+      ? undefined
       : escapeRegExp(id.testId))
   };
 }
