@@ -108,336 +108,21 @@ const createTest = (rootId: Id, label: string, line: number): TestNode => {
 }
 
 describe('filterTree', () => {
-  describe('tree with single test', () => {
-    const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
-    const tree = createProject(BASE_ID, id => [
-      createFile(id, 'some-file.js', id => [
-        createDescribe(id, 'someDescribe', 1, id => [
-          createDescribe(id, 'innerDescribe', 1, id => [
-            createTest(id, 'someTest', 2)
+  describe('using plan string matches', () => {
+    describe('tree with single test', () => {
+      const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
+      const tree = createProject(BASE_ID, id => [
+        createFile(id, 'some-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
           ])
         ])
-      ])
-    ]);
+      ]);
 
-    describe('expected matches', () => {
-      const expectedFilteredTree = {
-        files: [{
-          describeBlocks: [{
-            describeBlocks: [{
-              describeBlocks: [],
-              label: "innerDescribe",
-              tests: [{ label: "someTest" }]
-            }],
-            label: "someDescribe",
-            tests: []
-          }],
-          file: "/mock-project/some-file.js"
-        }],
-        folders: [],
-        label: "mock-project"
-      };
-
-      it('given full test id, matches test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe'],
-            testId: 'someTest'
-          })
-        ];
-
-        const filteredTree = filterTree(tree, testNames);
-
-        expect(filteredTree).toMatchObject(expectedFilteredTree);
-      });
-
-      it('given nested describe id, matches test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe']
-          })
-        ];
-
-        const filteredTree = filterTree(tree, testNames);
-
-        expect(filteredTree).toMatchObject(expectedFilteredTree);
-      });
-
-      it('given top-level describe id, matches test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe']
-          })
-        ];
-
-        const filteredTree = filterTree(tree, testNames);
-
-        expect(filteredTree).toMatchObject(expectedFilteredTree);
-      });
-
-      it('given file id, matches test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`
-          })
-        ];
-
-        const filteredTree = filterTree(tree, testNames);
-
-        expect(filteredTree).toMatchObject(expectedFilteredTree);
-      });
-
-      it('given project id, matches test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME
-          })
-        ];
-
-        const filteredTree = filterTree(tree, testNames);
-
-        expect(filteredTree).toMatchObject(expectedFilteredTree);
-      });
-    });
-
-    describe('expected misses', () => {
-      it('given different test id, matches describes, but not test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe'],
-            testId: 'differentTest'
-          })
-        ];
-    
-        const filteredTree = filterTree(tree, testNames);
-    
-        const allDescribesButNoTest = {
-          files: [{
-            describeBlocks: [{
-              describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  // No test found
-                ]
-              }],
-              label: "someDescribe",
-              tests: []
-            }],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
-        };
-        expect(filteredTree).toMatchObject(allDescribesButNoTest);
-      });
-
-      // Currently failing
-      it('given test id plus suffix, matches describes, but not test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe'],
-            testId: 'someTest2'
-          })
-        ];
-    
-        const filteredTree = filterTree(tree, testNames);
-    
-        const allDescribesButNoTest = {
-          files: [{
-            describeBlocks: [{
-              describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  // No test found
-                ]
-              }],
-              label: "someDescribe",
-              tests: []
-            }],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
-        };
-        expect(filteredTree).toMatchObject(allDescribesButNoTest);
-      });
-
-      it('given correct test, but wrong inner describe, matches file and outer describe only', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'otherDescribe'],
-            testId: 'someTest'
-          })
-        ];
-    
-        const filteredTree = filterTree(tree, testNames);
-    
-        const outerDescribeOnly = {
-          files: [{
-            describeBlocks: [{
-              describeBlocks: [
-                // No inner describe
-              ],
-              label: "someDescribe",
-              tests: []
-            }],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
-        };
-        expect(filteredTree).toMatchObject(outerDescribeOnly);
-      });
-
-      // Currently failing
-      it('given correct test, but inner describe with suffix, matches file and outer describe only', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe2'],
-            testId: 'someTest'
-          })
-        ];
-    
-        const filteredTree = filterTree(tree, testNames);
-    
-        const outerDescribeOnly = {
-          files: [{
-            describeBlocks: [{
-              describeBlocks: [
-                // No inner describe
-              ],
-              label: "someDescribe",
-              tests: []
-            }],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
-        };
-        expect(filteredTree).toMatchObject(outerDescribeOnly);
-      });
-
-      it('given correct test, but wrong outer describe, matches file only', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['otherDescribe', 'innerDescribe'],
-            testId: 'someTest'
-          })
-        ];
-    
-        const filteredTree = filterTree(tree, testNames);
-    
-        const fileOnly = {
-          files: [{
-            describeBlocks: [
-              // No inner describe
-            ],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
-        };
-        expect(filteredTree).toMatchObject(fileOnly);
-      });
-
-      // Currently failing
-      it('given correct test, but outer describe with suffix, matches file only', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe2', 'innerDescribe'],
-            testId: 'someTest'
-          })
-        ];
-    
-        const filteredTree = filterTree(tree, testNames);
-    
-        const fileOnly = {
-          files: [{
-            describeBlocks: [
-              // No inner describe
-            ],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
-        };
-        expect(filteredTree).toMatchObject(fileOnly);
-      });
-    });
-  });
-
-  describe('tree with multiple options at each level', () => {
-    const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
-    const tree = createProject(BASE_ID, id => [
-      createFile(id, 'some-file.js', id => [
-        createDescribe(id, 'someDescribe', 1, id => [
-          createDescribe(id, 'innerDescribe', 1, id => [
-            createTest(id, 'someTest', 2),
-            createTest(id, 'someTest2', 2),
-            createTest(id, 'otherTest', 2)
-          ]),
-          createDescribe(id, 'innerDescribe2', 1, id => [
-            createTest(id, 'someTest', 2)
-          ]),
-          createDescribe(id, 'otherInnerDescribe', 1, id => [
-            createTest(id, 'someTest', 2)
-          ])
-        ]),
-        createDescribe(id, 'someDescribe2', 1, id => [
-          createDescribe(id, 'innerDescribe', 1, id => [
-            createTest(id, 'someTest', 2)
-          ])
-        ]),
-        createDescribe(id, 'otherDescribe', 1, id => [
-          createDescribe(id, 'innerDescribe', 1, id => [
-            createTest(id, 'someTest', 2)
-          ])
-        ])
-      ]),
-      createFile(id, 'some-other-file.js', id => [
-        createDescribe(id, 'someDescribe', 1, id => [
-          createDescribe(id, 'innerDescribe', 1, id => [
-            createTest(id, 'someTest', 2)
-          ])
-        ])
-      ])
-    ]);
-
-    describe('expected matches', () => {
-      it('given full test id, matches only specific test', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe'],
-            testId: 'someTest'
-          })
-        ];
-
-        const filteredTree = filterTree(tree, testNames);
-
-        expect(filteredTree).toMatchObject({
+      describe('expected matches', () => {
+        const expectedFilteredTree = {
           files: [{
             describeBlocks: [{
               describeBlocks: [{
@@ -452,31 +137,567 @@ describe('filterTree', () => {
           }],
           folders: [],
           label: "mock-project"
+        };
+
+        it('given full test id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given nested describe id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given top-level describe id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given file id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given project id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
         });
       });
 
-      it('given nested describe id, matches all tests in nested describe', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe', 'innerDescribe']
-          })
-        ];
+      describe('expected misses', () => {
+        it('given different test id, matches describes, but not test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'differentTest'
+            })
+          ];
 
-        const filteredTree = filterTree(tree, testNames);
+          const filteredTree = filterTree(tree, testNames, false);
 
-        expect(filteredTree).toMatchObject({
+          const allDescribesButNoTest = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    // No test found
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(allDescribesButNoTest);
+        });
+
+        // Currently failing
+        it('given test id plus suffix, matches describes, but not test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'someTest2'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          const allDescribesButNoTest = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    // No test found
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(allDescribesButNoTest);
+        });
+
+        it('given correct test, but wrong inner describe, matches file and outer describe only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'otherDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          const outerDescribeOnly = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [
+                  // No inner describe
+                ],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(outerDescribeOnly);
+        });
+
+        // Currently failing
+        it('given correct test, but inner describe with suffix, matches file and outer describe only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe2'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          const outerDescribeOnly = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [
+                  // No inner describe
+                ],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(outerDescribeOnly);
+        });
+
+        it('given correct test, but wrong outer describe, matches file only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['otherDescribe', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          const fileOnly = {
+            files: [{
+              describeBlocks: [
+                // No inner describe
+              ],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(fileOnly);
+        });
+
+        // Currently failing
+        it('given correct test, but outer describe with suffix, matches file only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe2', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          const fileOnly = {
+            files: [{
+              describeBlocks: [
+                // No inner describe
+              ],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(fileOnly);
+        });
+      });
+    });
+
+    describe('tree with multiple options at each level', () => {
+      const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
+      const tree = createProject(BASE_ID, id => [
+        createFile(id, 'some-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2),
+              createTest(id, 'someTest2', 2),
+              createTest(id, 'otherTest', 2)
+            ]),
+            createDescribe(id, 'innerDescribe2', 1, id => [
+              createTest(id, 'someTest', 2)
+            ]),
+            createDescribe(id, 'otherInnerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ]),
+          createDescribe(id, 'someDescribe2', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ]),
+          createDescribe(id, 'otherDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ])
+        ]),
+        createFile(id, 'some-other-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ])
+        ])
+      ]);
+
+      describe('expected matches', () => {
+        it('given full test id, matches only specific test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [{ label: "someTest" }]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given nested describe id, matches all tests in nested describe', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given top-level describe id, matches all tests in outer describe', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "innerDescribe2",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "otherInnerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given file id, matches all tests in file', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "innerDescribe2",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "otherInnerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe2",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "otherDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given project id, matches all tests in project', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, false);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "innerDescribe2",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "otherInnerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe2",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "otherDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }, {
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-other-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
+        });
+      });
+    });
+  });
+  
+  describe('using regex matches', () => {
+    describe('tree with single test', () => {
+      const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
+      const tree = createProject(BASE_ID, id => [
+        createFile(id, 'some-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ])
+        ])
+      ]);
+
+      describe('expected matches', () => {
+        const expectedFilteredTree = {
           files: [{
             describeBlocks: [{
               describeBlocks: [{
                 describeBlocks: [],
                 label: "innerDescribe",
-                tests: [
-                  { label: "someTest" },
-                  { label: "someTest2" },
-                  { label: "otherTest" }
-                ]
+                tests: [{ label: "someTest" }]
               }],
               label: "someDescribe",
               tests: []
@@ -485,191 +706,541 @@ describe('filterTree', () => {
           }],
           folders: [],
           label: "mock-project"
+        };
+
+        it('given full test id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given nested describe id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given top-level describe id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given file id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
+        });
+
+        it('given project id, matches test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject(expectedFilteredTree);
         });
       });
 
-      it('given top-level describe id, matches all tests in outer describe', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`,
-            describeIds: ['someDescribe']
-          })
-        ];
+      describe('expected misses', () => {
+        it('given different test id, matches describes, but not test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'differentTest'
+            })
+          ];
 
-        const filteredTree = filterTree(tree, testNames);
+          const filteredTree = filterTree(tree, testNames, true);
 
-        expect(filteredTree).toMatchObject({
-          files: [{
-            describeBlocks: [{
+          const allDescribesButNoTest = {
+            files: [{
               describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" },
-                  { label: "someTest2" },
-                  { label: "otherTest" }
-                ]
-              },{
-                describeBlocks: [],
-                label: "innerDescribe2",
-                tests: [
-                  { label: "someTest" }
-                ]
-              },{
-                describeBlocks: [],
-                label: "otherInnerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    // No test found
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
               }],
-              label: "someDescribe",
-              tests: []
+              file: "/mock-project/some-file.js"
             }],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(allDescribesButNoTest);
+        });
+
+        // Currently failing
+        it('given test id plus suffix, matches describes, but not test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'someTest2'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          const allDescribesButNoTest = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    // No test found
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(allDescribesButNoTest);
+        });
+
+        it('given correct test, but wrong inner describe, matches file and outer describe only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'otherDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          const outerDescribeOnly = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [
+                  // No inner describe
+                ],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(outerDescribeOnly);
+        });
+
+        // Currently failing
+        it('given correct test, but inner describe with suffix, matches file and outer describe only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe2'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          const outerDescribeOnly = {
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [
+                  // No inner describe
+                ],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(outerDescribeOnly);
+        });
+
+        it('given correct test, but wrong outer describe, matches file only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['otherDescribe', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          const fileOnly = {
+            files: [{
+              describeBlocks: [
+                // No inner describe
+              ],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(fileOnly);
+        });
+
+        // Currently failing
+        it('given correct test, but outer describe with suffix, matches file only', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe2', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          const fileOnly = {
+            files: [{
+              describeBlocks: [
+                // No inner describe
+              ],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          };
+          expect(filteredTree).toMatchObject(fileOnly);
         });
       });
+    });
 
-      it('given file id, matches all tests in file', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME,
-            fileName: `${ROOT_PATH}/some-file.js`
-          })
-        ];
+    describe('tree with multiple options at each level', () => {
+      const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
+      const tree = createProject(BASE_ID, id => [
+        createFile(id, 'some-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2),
+              createTest(id, 'someTest2', 2),
+              createTest(id, 'otherTest', 2)
+            ]),
+            createDescribe(id, 'innerDescribe2', 1, id => [
+              createTest(id, 'someTest', 2)
+            ]),
+            createDescribe(id, 'otherInnerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ]),
+          createDescribe(id, 'someDescribe2', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ]),
+          createDescribe(id, 'otherDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ])
+        ]),
+        createFile(id, 'some-other-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createDescribe(id, 'innerDescribe', 1, id => [
+              createTest(id, 'someTest', 2)
+            ])
+          ])
+        ])
+      ]);
 
-        const filteredTree = filterTree(tree, testNames);
+      describe('expected matches', () => {
+        it('given full test id, matches only specific test', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe'],
+              testId: 'someTest'
+            })
+          ];
 
-        expect(filteredTree).toMatchObject({
-          files: [{
-            describeBlocks: [{
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
               describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" },
-                  { label: "someTest2" },
-                  { label: "otherTest" }
-                ]
-              },{
-                describeBlocks: [],
-                label: "innerDescribe2",
-                tests: [
-                  { label: "someTest" }
-                ]
-              },{
-                describeBlocks: [],
-                label: "otherInnerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [{ label: "someTest" }]
+                }],
+                label: "someDescribe",
+                tests: []
               }],
-              label: "someDescribe",
-              tests: []
-            },{
-              describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
-              }],
-              label: "someDescribe2",
-              tests: []
-            },{
-              describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
-              }],
-              label: "otherDescribe",
-              tests: []
+              file: "/mock-project/some-file.js"
             }],
-            file: "/mock-project/some-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
+            folders: [],
+            label: "mock-project"
+          });
         });
-      });
 
-      it('given project id, matches all tests in project', () => {
-        const testNames = [
-          mapIdToString({
-            projectId: PROJECT_NAME
-          })
-        ];
+        it('given nested describe id, matches all tests in nested describe', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe', 'innerDescribe']
+            })
+          ];
 
-        const filteredTree = filterTree(tree, testNames);
+          const filteredTree = filterTree(tree, testNames, true);
 
-        expect(filteredTree).toMatchObject({
-          files: [{
-            describeBlocks: [{
+          expect(filteredTree).toMatchObject({
+            files: [{
               describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" },
-                  { label: "someTest2" },
-                  { label: "otherTest" }
-                ]
-              },{
-                describeBlocks: [],
-                label: "innerDescribe2",
-                tests: [
-                  { label: "someTest" }
-                ]
-              },{
-                describeBlocks: [],
-                label: "otherInnerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
               }],
-              label: "someDescribe",
-              tests: []
-            },{
-              describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
-              }],
-              label: "someDescribe2",
-              tests: []
-            },{
-              describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
-              }],
-              label: "otherDescribe",
-              tests: []
+              file: "/mock-project/some-file.js"
             }],
-            file: "/mock-project/some-file.js"
-          },{
-            describeBlocks: [{
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given top-level describe id, matches all tests in outer describe', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`,
+              describeIds: ['someDescribe']
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
               describeBlocks: [{
-                describeBlocks: [],
-                label: "innerDescribe",
-                tests: [
-                  { label: "someTest" }
-                ]
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "innerDescribe2",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "otherInnerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
               }],
-              label: "someDescribe",
-              tests: []
+              file: "/mock-project/some-file.js"
             }],
-            file: "/mock-project/some-other-file.js"
-          }],
-          folders: [],
-          label: "mock-project"
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given file id, matches all tests in file', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME,
+              fileName: `${ROOT_PATH}/some-file.js`
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "innerDescribe2",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "otherInnerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe2",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "otherDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
+        });
+
+        it('given project id, matches all tests in project', () => {
+          const testNames = [
+            mapIdToString({
+              projectId: PROJECT_NAME
+            })
+          ];
+
+          const filteredTree = filterTree(tree, testNames, true);
+
+          expect(filteredTree).toMatchObject({
+            files: [{
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" },
+                    { label: "someTest2" },
+                    { label: "otherTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "innerDescribe2",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }, {
+                  describeBlocks: [],
+                  label: "otherInnerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe2",
+                tests: []
+              }, {
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "otherDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-file.js"
+            }, {
+              describeBlocks: [{
+                describeBlocks: [{
+                  describeBlocks: [],
+                  label: "innerDescribe",
+                  tests: [
+                    { label: "someTest" }
+                  ]
+                }],
+                label: "someDescribe",
+                tests: []
+              }],
+              file: "/mock-project/some-other-file.js"
+            }],
+            folders: [],
+            label: "mock-project"
+          });
         });
       });
     });
