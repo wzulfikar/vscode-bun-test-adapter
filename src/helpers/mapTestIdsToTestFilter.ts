@@ -1,13 +1,17 @@
 import _ from 'lodash';
 import { ITestFilter } from "../types";
-import { escapeRegExp } from "./escapeRegExp";
+import { replacePrintfPatterns } from "./escapeRegExp";
 import { mapStringToId, mapIdToEscapedRegExpId, Id } from "./idMaps";
+
+function isDefined<T>(object: T | undefined): object is T {
+  return object !== undefined;
+};
 
 function mapTestIdToTestNamePattern(test: Id): string {
   // Jest test names are a concatenation of the describeIds and testId, separated by space
-  return (test.describeIds || []).concat(test.testId || '')
-    .filter(testPart => testPart)
-    .map(part => escapeRegExp(part || ""))
+  return [...(test.describeIds || []), test.testId]
+    .filter(isDefined)
+    .map(replacePrintfPatterns)
     .join(' ');
 }
 
