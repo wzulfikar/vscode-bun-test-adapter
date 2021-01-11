@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { flatMap, flattenDeep } from 'lodash';
 // import { mapTestIdToTestNamePattern } from "../mapTestIdsToTestFilter";
 import {
   createDescribeNode,
@@ -8,6 +8,7 @@ import {
   createTestNode,
   DescribeNode,
   FileNode,
+  FileWithParseErrorNode,
   // FileWithParseErrorNode,
   FolderNode,
   ProjectRootNode,
@@ -676,7 +677,7 @@ describe('filterTree', () => {
       });
     });
   });
-  
+
   describe('using regex matches', () => {
     describe('tree with single test', () => {
       const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
@@ -1243,6 +1244,170 @@ describe('filterTree', () => {
           });
         });
       });
+    });
+
+    describe('jest.each blocks', () => {
+      const BASE_ID = { projectId: PROJECT_NAME, fileName: ROOT_PATH };
+      const tree = createProject(BASE_ID, id => [
+        createFile(id, 'some-file.js', id => [
+          createDescribe(id, 'someDescribe', 1, id => [
+            createTest(id, 'someTest (1)', 2),
+            createTest(id, 'someTest (2.4)', 3),
+            createTest(id, 'someTest (-3)', 4),
+            createTest(id, 'someTest ("a string")', 5),
+            createTest(id, 'someTest ({"key":"value"})', 6),
+            createTest(id, 'someTest ([1,2,3])', 7),
+            createTest(id, 'someTest {"not":"in-parens"}', 8),
+            createTest(id, 'someTest (random words)', 9),
+            createTest(id, 'someTest not in parens', 10),
+            createTest(id, 'someTest 5', 10),
+            createTest(id, 'someTest (%#)', 11),
+            createTest(id, 'someTest (%i)', 11),
+            createTest(id, 'someTest (%d)', 11),
+            createTest(id, 'someTest (%f)', 11),
+            createTest(id, 'someTest (%p)', 11),
+            createTest(id, 'someTest (%s)', 11),
+            createTest(id, 'someTest (%o)', 11),
+            createTest(id, 'someTest (%j)', 11)
+          ])
+        ])
+      ]);
+
+      const getFiles = (tree: ProjectRootNode|FolderNode): (FileNode|FileWithParseErrorNode)[] => {
+        return [
+          ...tree.files,
+          ...flatMap(tree.folders, folder => getFiles(folder))
+        ];
+      };
+
+      const getTests = (describeBlocks: DescribeNode[]): TestNode[] => {
+        return [
+          ...flatMap(describeBlocks, describe => describe.tests),
+          ...flatMap(describeBlocks, describe => getTests(describe.describeBlocks))
+        ];
+      };
+
+      const getTestLabels = (tree: ProjectRootNode): string[] => {
+        return flattenDeep(getFiles(tree).map(file =>
+          getTests(file.describeBlocks).map(test =>
+            test.label)));
+      };
+
+      it('%#', () => {
+        const testNames = [
+          mapIdToString({
+            projectId: PROJECT_NAME,
+            fileName: `${ROOT_PATH}/some-file.js`,
+            describeIds: ['someDescribe'],
+            testId: 'someTest (%#)'
+          })
+        ];
+
+        const filteredTree = filterTree(tree, testNames, true);
+
+        const tests = getTestLabels(filteredTree);
+        expect(tests).toMatchObject([
+          "someTest (1)",
+          "someTest (%#)",
+        ]);
+      });
+
+      it('%i', () => {
+        const testNames = [
+          mapIdToString({
+            projectId: PROJECT_NAME,
+            fileName: `${ROOT_PATH}/some-file.js`,
+            describeIds: ['someDescribe'],
+            testId: 'someTest (%i)'
+          })
+        ];
+
+        const filteredTree = filterTree(tree, testNames, true);
+
+        const tests = getTestLabels(filteredTree);
+        expect(tests).toMatchObject([
+          "someTest (1)",
+          "someTest (-3)",
+          "someTest (%i)"
+        ]);
+      });
+
+      ['%d', '%f'].forEach(placeholder => it(`${placeholder}`, () => {
+        const testNames = [
+          mapIdToString({
+            projectId: PROJECT_NAME,
+            fileName: `${ROOT_PATH}/some-file.js`,
+            describeIds: ['someDescribe'],
+            testId: `someTest (${placeholder})`
+          })
+        ];
+
+        const filteredTree = filterTree(tree, testNames, true);
+
+        const tests = getTestLabels(filteredTree);
+        expect(tests).toMatchObject([
+          "someTest (1)",
+          "someTest (2.4)",
+          "someTest (-3)",
+          `someTest (${placeholder})`
+        ]);
+      }));
+
+      it('%j', () => {
+        const testNames = [
+          mapIdToString({
+            projectId: PROJECT_NAME,
+            fileName: `${ROOT_PATH}/some-file.js`,
+            describeIds: ['someDescribe'],
+            testId: `someTest (%j)`
+          })
+        ];
+
+        const filteredTree = filterTree(tree, testNames, true);
+
+        const tests = getTestLabels(filteredTree);
+        expect(tests).toMatchObject([
+          'someTest (1)',
+          'someTest (2.4)',
+          'someTest (-3)',
+          'someTest ("a string")',
+          'someTest ({"key":"value"})',
+          'someTest ([1,2,3])',
+          'someTest (%j)'
+        ]);
+      });
+
+      ['%p', '%s', '%o'].forEach(placeholder => it(`${placeholder}`, () => {
+        const testNames = [
+          mapIdToString({
+            projectId: PROJECT_NAME,
+            fileName: `${ROOT_PATH}/some-file.js`,
+            describeIds: ['someDescribe'],
+            testId: `someTest (${placeholder})`
+          })
+        ];
+
+        const filteredTree = filterTree(tree, testNames, true);
+
+        const tests = getTestLabels(filteredTree);
+        expect(tests).toMatchObject([
+          'someTest (1)',
+          'someTest (2.4)',
+          'someTest (-3)',
+          'someTest ("a string")',
+          'someTest ({"key":"value"})',
+          'someTest ([1,2,3])',
+          'someTest (random words)',
+          'someTest (%#)',
+          'someTest (%i)',
+          'someTest (%d)',
+          'someTest (%f)',
+          'someTest (%p)',
+          'someTest (%s)',
+          'someTest (%o)',
+          'someTest (%j)'
+        ]);
+      }));
     });
   });
 });
