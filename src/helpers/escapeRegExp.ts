@@ -46,7 +46,7 @@ export function replacePrintfPatterns(testId: string): string {
         case 'j': // %j - JSON.
           return `(${REGEX_JSON_LOOSE}|${printfPattern})`;
         case 'p': // %p - pretty-format.
-        case 's': // %s- String.
+        case 's': // %s - String.
         case 'o': // %o - Object.
           return RGX_ANYTHING;
         case '%': // %% - single percent sign ('%'). This does not consume an argument.
