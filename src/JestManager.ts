@@ -35,8 +35,8 @@ export default class JestManager {
   ): Promise<IJestResponse | null> {
     output.clear();
     output.appendLine(`Running tests for '${projectConfig.projectName}'\n`);
-    const writeOutput = (error: Buffer) => {
-      const raw = error.toString();
+    const writeOutput = (buffer: Buffer) => {
+      const raw = buffer.toString();
       const sanitised = stripAnsi(raw);
       return output.append(sanitised);
     };
