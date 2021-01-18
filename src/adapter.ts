@@ -13,7 +13,7 @@ import {
   TestSuiteInfo,
 } from "vscode-test-adapter-api";
 import { Log } from "vscode-test-adapter-util";
-import { EXTENSION_CONFIGURATION_NAME } from './constants';
+import { EXTENSION_CONFIGURATION_NAME } from "./constants";
 import { emitTestCompleteRootNode, emitTestRunningRootNode } from "./helpers/emitTestCompleteRootNode";
 import { filterTree } from "./helpers/filterTree";
 import { mapIdToString, mapStringToId } from "./helpers/idMaps";
@@ -33,6 +33,7 @@ export default class JestTestAdapter implements TestAdapter {
   private isLoadingTests: boolean = false;
   private isRunningTests: boolean = false;
   private disposables: IDisposable[] = [];
+  private outputChannels: vscode.OutputChannel[] = [];
   private tree: WorkspaceRootNode = createWorkspaceRootNode();
   private readonly testsEmitter = new vscode.EventEmitter<TestLoadStartedEvent | TestLoadFinishedEvent>();
   private readonly testStatesEmitter = new vscode.EventEmitter<TestStateCompatibleEvent>();
@@ -96,9 +97,7 @@ export default class JestTestAdapter implements TestAdapter {
         .getConfiguration(EXTENSION_CONFIGURATION_NAME, null)
         .get<boolean>("flattenExplorer", false);
 
-      const suite = flattenExplorer
-        ? flatMapWorkspaceRootToSuite(this.tree)
-        : mapWorkspaceRootToSuite(this.tree);
+      const suite = flattenExplorer ? flatMapWorkspaceRootToSuite(this.tree) : mapWorkspaceRootToSuite(this.tree);
 
       this.log.info("Results:");
       this.logSuite(suite);
@@ -167,7 +166,7 @@ export default class JestTestAdapter implements TestAdapter {
       type: "node",
       runtimeExecutable: "${workspaceFolder}/node_modules/.bin/jest",
       windows: {
-        runtimeExecutable: "${workspaceFolder}/node_modules/.bin/jest.cmd"
+        runtimeExecutable: "${workspaceFolder}/node_modules/.bin/jest.cmd",
       },
     };
 
@@ -181,10 +180,16 @@ export default class JestTestAdapter implements TestAdapter {
 
   public dispose(): void {
     this.cancel();
+
     for (const disposable of this.disposables) {
       disposable.dispose();
     }
     this.disposables = [];
+
+    for (const disposable of this.outputChannels) {
+      disposable.dispose();
+    }
+    this.outputChannels = [];
   }
 
   private determineProjectsAndTestsToRun(tests: string[]): Array<{ project: ProjectRootNode; testsToRun: string[] }> {
@@ -216,7 +221,11 @@ export default class JestTestAdapter implements TestAdapter {
     emitTestRunningRootNode(filteredTree, eventEmitter);
 
     // begin running the tests in Jest.
-    const jestResponse = await this.jestManager.runTests(testFilter, project.config);
+    const jestResponse = await this.jestManager.runTests(
+      testFilter,
+      project.config,
+      this.getOrCreateOutputWindowForProject(project),
+    );
 
     if (jestResponse) {
       // combine the runtime discovered tests.
@@ -228,6 +237,19 @@ export default class JestTestAdapter implements TestAdapter {
       const testEvents = mapJestTestResultsToTestEvents(jestResponse, filteredTreeWithRuntime);
       emitTestCompleteRootNode(filteredTreeWithRuntime, testEvents, eventEmitter);
     }
+  }
+
+  private getOrCreateOutputWindowForProject(project: ProjectRootNode): vscode.OutputChannel {
+    const channelName = `Jest (${project.config.projectName})`;
+    const channel = this.outputChannels.find(c => c.name === channelName);
+
+    if (channel) {
+      return channel;
+    }
+
+    const created = vscode.window.createOutputChannel(channelName);
+    this.outputChannels.push(created);
+    return created;
   }
 
   private handleProjectsChanged(event: ProjectsChangedEvent) {
@@ -242,9 +264,7 @@ export default class JestTestAdapter implements TestAdapter {
         .getConfiguration(EXTENSION_CONFIGURATION_NAME, null)
         .get<boolean>("flattenExplorer", false);
 
-      const suite = flattenExplorer
-        ? flatMapWorkspaceRootToSuite(this.tree)
-        : mapWorkspaceRootToSuite(this.tree);
+      const suite = flattenExplorer ? flatMapWorkspaceRootToSuite(this.tree) : mapWorkspaceRootToSuite(this.tree);
 
       switch (event.type) {
         case "projectAdded":
@@ -286,8 +306,10 @@ export default class JestTestAdapter implements TestAdapter {
     this.retireEmitter.fire({});
   }
 
-  private logSuite(suiteOrTest?: TestSuiteInfo|TestInfo, depth: number = 0): void {
-    if (_.isNil(suiteOrTest)) { return; }
+  private logSuite(suiteOrTest?: TestSuiteInfo | TestInfo, depth: number = 0): void {
+    if (_.isNil(suiteOrTest)) {
+      return;
+    }
 
     const indent = (inDepth: number): string => Array(inDepth).fill("  ").join("");
 

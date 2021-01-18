@@ -12,6 +12,8 @@ Run your Jest tests using the [Test Explorer UI](https://marketplace.visualstudi
   * Currently limited to Jest being available from the `./node_modules/.bin/jest` path from the VS Code workspace directory. We are working to make this more flexible.
 * Open the Test view
 * Run / Debug your tests in the Test Explorer
+* Check your test failures in the the VS Code Output Window
+  * Note there is one Output Window per project named: **Jest ([project name])**
 
 ## Project setup
 

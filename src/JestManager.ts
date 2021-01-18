@@ -1,8 +1,10 @@
 import { JestTotalResults, Options, Runner, TestReconciler } from "jest-editor-support";
 import { WorkspaceFolder } from "vscode";
-import { createRunner } from './JestSettings';
-import { ProjectConfig } from './repo';
+import { createRunner } from "./JestSettings";
+import { ProjectConfig } from "./repo";
 import { IJestResponse, ITestFilter } from "./types";
+import * as vscode from "vscode";
+import stripAnsi from "strip-ansi";
 
 export enum DebugOutput {
   externalTerminal = "externalTerminal",
@@ -29,14 +31,25 @@ export default class JestManager {
   public async runTests(
     testFilter: ITestFilter | null,
     projectConfig: ProjectConfig,
+    output: vscode.OutputChannel,
   ): Promise<IJestResponse | null> {
+    output.clear();
+    output.appendLine(`Running tests for '${projectConfig.projectName}'\n`);
+    const writeOutput = (buffer: Buffer) => {
+      const raw = buffer.toString();
+      const sanitised = stripAnsi(raw);
+      return output.append(sanitised);
+    };
+
     const results = await new Promise<JestTotalResults | null>((resolve, reject) => {
       const runner = this.createRunner(testFilter, projectConfig);
       runner
         .once("executableJSON", (data: JestTotalResults) => resolve(data))
         .once("exception", result => reject(result))
         .once("terminalError", result => reject(result))
-        .once("debuggerProcessExit", () => resolve(null));
+        .once("debuggerProcessExit", () => resolve(null))
+        .on("executableOutput", writeOutput)
+        .on("executableStdErr", writeOutput);
       runner.start(false);
     });
     if (!results) {
