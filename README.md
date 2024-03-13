@@ -1,3 +1,5 @@
+# This repo is no longer maintained.  Use the [Jest](https://marketplace.visualstudio.com/items?itemName=Orta.vscode-jest) extension instead.
+
 # Jest Test Explorer for Visual Studio Code
 
 Run your Jest tests using the [Test Explorer UI](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer).
