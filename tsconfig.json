@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2016",
-    "lib": [
-      "es2016"
-    ],
+    "lib": ["es2016"],
     "module": "commonjs",
     "outDir": "out",
     "importHelpers": true,
@@ -17,8 +15,5 @@
     "allowSyntheticDefaultImports": true,
     "strictNullChecks": true
   },
-  "include": [
-    "src/**/*",
-    "@types/**/*",
-  ]
+  "include": ["src/**/*", "@types/**/*"]
 }

@@ -1,4 +1,4 @@
-import memfs from "memfs";
+import memfs from 'memfs'
 
-process.chdir("/");
-module.exports = memfs;
+process.chdir('/')
+module.exports = memfs

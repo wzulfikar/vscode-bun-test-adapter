@@ -1,27 +1,27 @@
-import vscode from "vscode";
+import type vscode from 'vscode'
 
 export interface ProjectConfig {
-  jestConfig?: string;
-  jestCommand: string;
-  jestExecutionDirectory: string;
-  projectName: string;
-  rootPath: string;
-  tsConfig?: string;
+  jestConfig?: string
+  jestCommand: string
+  jestExecutionDirectory: string
+  projectName: string
+  rootPath: string
+  tsConfig?: string
 }
 
 export type ProjectChangeEvent =
   | {
-      type: "added";
-      config: ProjectConfig;
+      type: 'added'
+      config: ProjectConfig
     }
   | {
-      type: "removed";
-      rootPath: string;
-    };
+      type: 'removed'
+      rootPath: string
+    }
 
 export interface RepoParser {
-  type: string;
-  isMatch: () => Promise<boolean>;
-  getProjects: () => Promise<ProjectConfig[]>;
-  readonly projectChange: vscode.Event<ProjectChangeEvent>;
+  type: string
+  isMatch: () => Promise<boolean>
+  getProjects: () => Promise<ProjectConfig[]>
+  readonly projectChange: vscode.Event<ProjectChangeEvent>
 }

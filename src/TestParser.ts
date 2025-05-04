@@ -1,19 +1,26 @@
-import fs from "fs";
-import { JestSettings, parse as editorSupportParse } from "jest-editor-support";
-import _ from "lodash";
-import * as mm from "micromatch";
-import * as path from "path";
-import * as vscode from "vscode";
-import { Log } from "vscode-test-adapter-util";
-import { lowerCaseDriveLetter } from "./helpers/mapAssertionResultToTestId";
-import { cancellationTokenNone, Matcher, TestFileParseResult } from "./types";
-import { convertErrorToString } from "./utils";
+import fs from 'node:fs'
+import * as path from 'node:path'
+import {
+  type JestSettings,
+  parse as editorSupportParse,
+} from 'jest-editor-support'
+import _ from 'lodash'
+import * as mm from 'micromatch'
+import type * as vscode from 'vscode'
+import type { Log } from 'vscode-test-adapter-util'
+import { lowerCaseDriveLetter } from './helpers/mapAssertionResultToTestId'
+import {
+  type Matcher,
+  type TestFileParseResult,
+  cancellationTokenNone,
+} from './types'
+import { convertErrorToString } from './utils'
 
 /**
  * Glob patterns to globally ignore when searching for tests.
  * Only universally recognized patterns should be used here, such as node_modules.
  */
-const IGNORE_GLOBS = ["node_modules"];
+const IGNORE_GLOBS = ['node_modules']
 
 class TestParser {
   public constructor(
@@ -25,17 +32,21 @@ class TestParser {
   public async parseAll(
     cancellationToken: vscode.CancellationToken = cancellationTokenNone,
   ): Promise<TestFileParseResult[]> {
-    const matcher = createMatcher(this.settings);
+    const matcher = createMatcher(this.settings)
 
-    this.log.info("Loading Jest tests");
+    this.log.info('Loading Jest tests')
 
     // TODO there is a Jest CLI option --listTests that will provide a list of test files that the current Jest config
     // resolves.  We should use this instead of trying to do the regex ourselves.
 
-    const parsedResults = await this.exploreDirectory(this.rootPath, matcher, cancellationToken);
-    this.log.info("Test load complete");
+    const parsedResults = await this.exploreDirectory(
+      this.rootPath,
+      matcher,
+      cancellationToken,
+    )
+    this.log.info('Test load complete')
 
-    return parsedResults;
+    return parsedResults
   }
 
   public parseFiles(
@@ -43,14 +54,14 @@ class TestParser {
     cancellationToken: vscode.CancellationToken = cancellationTokenNone,
   ): TestFileParseResult[] {
     // TODO this method should potentially be async...
-    const matcher = createMatcher(this.settings);
+    const matcher = createMatcher(this.settings)
 
-    return files.filter(matcher).map(f => {
+    return files.filter(matcher).map((f) => {
       if (cancellationToken.isCancellationRequested) {
-        throw Error("Cancellation requested.");
+        throw Error('Cancellation requested.')
       }
-      return this.parse(f);
-    });
+      return this.parse(f)
+    })
   }
 
   /**
@@ -66,14 +77,14 @@ class TestParser {
     matcher: Matcher,
     cancellationToken: vscode.CancellationToken = cancellationTokenNone,
   ): Promise<TestFileParseResult[]> {
-    const isDirectory = await this.checkIsDirectory(filePath, cancellationToken);
+    const isDirectory = await this.checkIsDirectory(filePath, cancellationToken)
     if (isDirectory) {
-      return await this.exploreDirectory(filePath, matcher, cancellationToken);
-    } else if (matcher(filePath)) {
-      return [this.parse(filePath)];
-    } else {
-      return [];
+      return await this.exploreDirectory(filePath, matcher, cancellationToken)
     }
+    if (matcher(filePath)) {
+      return [this.parse(filePath)]
+    }
+    return []
   }
 
   /**
@@ -84,23 +95,25 @@ class TestParser {
     directory: string,
     cancellationToken: vscode.CancellationToken = cancellationTokenNone,
   ): Promise<boolean> {
-    let reject: (reason?: any) => void;
+    let reject: (reason?: any) => void
 
     const promise = new Promise<boolean>((resolve, xReject) => {
-      reject = xReject;
+      reject = xReject
 
       fs.stat(directory, (err, stats) => {
         if (err) {
-          reject(err);
+          reject(err)
         } else {
-          resolve(stats.isDirectory());
+          resolve(stats.isDirectory())
         }
-      });
-    });
+      })
+    })
 
-    cancellationToken.onCancellationRequested(() => reject("Cancellation requested."));
+    cancellationToken.onCancellationRequested(() =>
+      reject('Cancellation requested.'),
+    )
 
-    return promise;
+    return promise
   }
 
   /**
@@ -113,9 +126,14 @@ class TestParser {
     matcher: Matcher,
     cancellationToken: vscode.CancellationToken = cancellationTokenNone,
   ): Promise<TestFileParseResult[]> {
-    const contents = await this.getDirectoryContents(directory, cancellationToken);
-    const files = await Promise.all(contents.map(x => this.evaluateFilePath(x, matcher, cancellationToken)));
-    return _.flatten(files);
+    const contents = await this.getDirectoryContents(
+      directory,
+      cancellationToken,
+    )
+    const files = await Promise.all(
+      contents.map((x) => this.evaluateFilePath(x, matcher, cancellationToken)),
+    )
+    return _.flatten(files)
   }
 
   /**
@@ -126,15 +144,15 @@ class TestParser {
    */
   private parse(file: string): TestFileParseResult {
     try {
-      return { ...editorSupportParse(file), outcome: "success" };
+      return { ...editorSupportParse(file), outcome: 'success' }
     } catch (error) {
-      const errorAsString = convertErrorToString(error);
-      this.log.error(errorAsString);
+      const errorAsString = convertErrorToString(error)
+      this.log.error(errorAsString)
       return {
         error: errorAsString,
         file,
-        outcome: "failure",
-      };
+        outcome: 'failure',
+      }
     }
   }
 
@@ -148,23 +166,25 @@ class TestParser {
     directory: string,
     cancellationToken: vscode.CancellationToken = cancellationTokenNone,
   ): Promise<string[]> {
-    let reject: (reason?: any) => void;
+    let reject: (reason?: any) => void
 
     const promise = new Promise<string[]>((resolve, xReject) => {
-      reject = xReject;
+      reject = xReject
 
       fs.readdir(directory, (err, files) => {
         if (err) {
-          reject(err);
+          reject(err)
         } else {
-          const includedFiles = mm.not(files, IGNORE_GLOBS);
-          resolve(includedFiles.map(f => path.join(directory, f)));
+          const includedFiles = mm.not(files, IGNORE_GLOBS)
+          resolve(includedFiles.map((f) => path.join(directory, f)))
         }
-      });
-    });
+      })
+    })
 
-    cancellationToken.onCancellationRequested(() => reject("Cancellation requested."));
-    return promise;
+    cancellationToken.onCancellationRequested(() =>
+      reject('Cancellation requested.'),
+    )
+    return promise
   }
 }
 
@@ -173,30 +193,35 @@ class TestParser {
  * @param settings The Jest settings.
  */
 const createMatcher = (settings: JestSettings): Matcher => {
-  return value => {
-    return settings.configs.some(c => {
+  return (value) => {
+    return settings.configs.some((c) => {
       // first check if there are any ignored paths.
       const isIgnored = c.testPathIgnorePatterns
         ?.map(lowerCaseDriveLetter)
-        ?.some(p => {
-          const matches = value.match(p);
-          return matches && matches.length > 0;
-        });
+        ?.some((p) => {
+          const matches = value.match(p)
+          return matches && matches.length > 0
+        })
 
       if (isIgnored) {
-        return false;
+        return false
       }
 
       if (c.testRegex?.length > 0) {
-        return c.testRegex.some(r => {
-          const regex = new RegExp(r, process.platform === "win32" ? "i" : undefined);
-          return regex.test(value);
-        });
+        return c.testRegex.some((r) => {
+          const regex = new RegExp(
+            r,
+            process.platform === 'win32' ? 'i' : undefined,
+          )
+          return regex.test(value)
+        })
       }
 
-      return mm.any(value, c.testMatch, { nocase: process.platform === "win32" });
-    });
-  };
-};
+      return mm.any(value, c.testMatch, {
+        nocase: process.platform === 'win32',
+      })
+    })
+  }
+}
 
-export { TestParser as default, createMatcher };
+export { TestParser as default, createMatcher }

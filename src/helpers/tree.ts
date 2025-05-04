@@ -1,8 +1,8 @@
-import { ProjectConfig } from '../repo';
+import type { ProjectConfig } from '../repo'
 
 interface NodeBase {
-  id: string;
-  label: string;
+  id: string
+  label: string
 }
 
 export type Node =
@@ -12,118 +12,128 @@ export type Node =
   | FileNode
   | FileWithParseErrorNode
   | DescribeNode
-  | TestNode;
+  | TestNode
 
 export interface WorkspaceRootNode extends NodeBase {
-  id: "root";
-  type: "workspaceRootNode";
-  projects: ProjectRootNode[];
+  id: 'root'
+  type: 'workspaceRootNode'
+  projects: ProjectRootNode[]
 }
 
 export interface ProjectRootNode extends NodeBase {
-  type: "projectRootNode";
-  folders: FolderNode[];
-  files: Array<FileNode | FileWithParseErrorNode>;
-  config: ProjectConfig;
+  type: 'projectRootNode'
+  folders: FolderNode[]
+  files: Array<FileNode | FileWithParseErrorNode>
+  config: ProjectConfig
 }
 
 export interface FolderNode extends NodeBase {
-  type: "folder";
-  folders: FolderNode[];
-  files: Array<FileNode | FileWithParseErrorNode>;
+  type: 'folder'
+  folders: FolderNode[]
+  files: Array<FileNode | FileWithParseErrorNode>
 }
 
 export interface FileNode extends NodeBase {
-  type: "file";
-  describeBlocks: DescribeNode[];
-  tests: TestNode[];
-  file: string;
-  line: number;
+  type: 'file'
+  describeBlocks: DescribeNode[]
+  tests: TestNode[]
+  file: string
+  line: number
 }
 
 export interface FileWithParseErrorNode extends NodeBase {
-  type: "fileWithParseError";
-  describeBlocks: DescribeNode[];
-  tests: TestNode[];
-  file: string;
-  error: string;
+  type: 'fileWithParseError'
+  describeBlocks: DescribeNode[]
+  tests: TestNode[]
+  file: string
+  error: string
 }
 
 export interface DescribeNode extends NodeBase {
-  describeBlocks: DescribeNode[];
-  type: "describe";
-  tests: TestNode[];
-  file: string;
-  line?: number;
-  runtimeDiscovered: boolean;
+  describeBlocks: DescribeNode[]
+  type: 'describe'
+  tests: TestNode[]
+  file: string
+  line?: number
+  runtimeDiscovered: boolean
 }
 
 export interface TestNode extends NodeBase {
-  type: "test";
-  file: string;
-  line: number;
-  runtimeDiscovered: boolean;
+  type: 'test'
+  file: string
+  line: number
+  runtimeDiscovered: boolean
 }
 
 export interface NodeVisitor {
-  visitWorkspaceRootNode: (workspaceRoot: WorkspaceRootNode) => void;
+  visitWorkspaceRootNode: (workspaceRoot: WorkspaceRootNode) => void
 
-  visitProjectRootNode: (projectRoot: ProjectRootNode) => void;
+  visitProjectRootNode: (projectRoot: ProjectRootNode) => void
 
-  visitFolderNode: (folder: FolderNode) => void;
+  visitFolderNode: (folder: FolderNode) => void
 
-  visitFileNode: (file: FileNode) => void;
+  visitFileNode: (file: FileNode) => void
 
-  visitDescribeNode: (describe: DescribeNode) => void;
+  visitDescribeNode: (describe: DescribeNode) => void
 
-  visitTestNode: (test: TestNode) => void;
+  visitTestNode: (test: TestNode) => void
 }
 
-export const isProjectRootNode = (node: { type: string }): node is ProjectRootNode => {
-  return node.type === "projectRootNode";
+export const isProjectRootNode = (node: {
+  type: string
+}): node is ProjectRootNode => {
+  return node.type === 'projectRootNode'
 }
 
 export const isFolderNode = (node: { type: string }): node is FolderNode => {
-  return node.type === "folder";
+  return node.type === 'folder'
 }
 
 export const createWorkspaceRootNode = (): WorkspaceRootNode => {
   return {
-    id: "root",
-    label: "workspaceRootNode",
+    id: 'root',
+    label: 'workspaceRootNode',
     projects: [],
-    type: "workspaceRootNode",
-  };
-};
+    type: 'workspaceRootNode',
+  }
+}
 
-export const createProjectNode = (id: string, label: string, config: ProjectConfig): ProjectRootNode => {
+export const createProjectNode = (
+  id: string,
+  label: string,
+  config: ProjectConfig,
+): ProjectRootNode => {
   return {
     config,
     files: [],
     folders: [],
     id,
     label,
-    type: "projectRootNode",
-  };
-};
+    type: 'projectRootNode',
+  }
+}
 
 export const createFolderNode = (id: string, label: string): FolderNode => ({
   files: [],
   folders: [],
   id,
   label,
-  type: "folder",
-});
+  type: 'folder',
+})
 
-export const createFileNode = (id: string, label: string, file: string): FileNode => ({
+export const createFileNode = (
+  id: string,
+  label: string,
+  file: string,
+): FileNode => ({
   describeBlocks: [],
   file,
   id,
   label,
   line: 1, // TODO confirm that we are one indexed.
   tests: [],
-  type: "file",
-});
+  type: 'file',
+})
 
 export const createFileWithParseErrorNode = (
   id: string,
@@ -137,10 +147,16 @@ export const createFileWithParseErrorNode = (
   id,
   label,
   tests: [],
-  type: "fileWithParseError",
-});
+  type: 'fileWithParseError',
+})
 
-export const createDescribeNode = (id: string, label: string, file: string, line: number | undefined, runtimeDiscovered: boolean): DescribeNode => ({
+export const createDescribeNode = (
+  id: string,
+  label: string,
+  file: string,
+  line: number | undefined,
+  runtimeDiscovered: boolean,
+): DescribeNode => ({
   describeBlocks: [],
   file,
   id,
@@ -148,14 +164,20 @@ export const createDescribeNode = (id: string, label: string, file: string, line
   line,
   runtimeDiscovered,
   tests: [],
-  type: "describe",
-});
+  type: 'describe',
+})
 
-export const createTestNode = (id: string, label: string, file: string, line: number | undefined, runtimeDiscovered: boolean): TestNode => ({
+export const createTestNode = (
+  id: string,
+  label: string,
+  file: string,
+  line: number | undefined,
+  runtimeDiscovered: boolean,
+): TestNode => ({
   file,
   id,
   label,
   line: line ?? 0,
   runtimeDiscovered,
-  type: "test",
-});
+  type: 'test',
+})

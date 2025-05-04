@@ -1,5 +1,5 @@
-import { JestAssertionResults } from "jest-editor-support";
-import { mapIdToString } from "./idMaps";
+import type { JestAssertionResults } from 'jest-editor-support'
+import { mapIdToString } from './idMaps'
 
 export const mapAssertionResultToTestId = (
   assertionResult: JestAssertionResults,
@@ -11,7 +11,7 @@ export const mapAssertionResultToTestId = (
     fileName: lowerCaseDriveLetter(fileName),
     projectId,
     testId: assertionResult.title,
-  });
+  })
 
 /**
  * A function that lowercases the drive letter for the given path.  In Windows at least, we seem to get an issue with
@@ -19,9 +19,9 @@ export const mapAssertionResultToTestId = (
  * @param path the file path to lowercase the drive letter for.
  */
 export const lowerCaseDriveLetter = (path: string): string => {
-  const driveLetterRegex = /^([a-zA-Z])\:\\/;
+  const driveLetterRegex = /^([a-zA-Z])\:\\/
   if (driveLetterRegex.test(path)) {
-    return path.replace(driveLetterRegex, x => x.toLowerCase());
+    return path.replace(driveLetterRegex, (x) => x.toLowerCase())
   }
-  return path;
-};
+  return path
+}

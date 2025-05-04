@@ -1,45 +1,61 @@
-import _ from "lodash";
-import { TestEvent } from "vscode-test-adapter-api";
-import { IJestResponse } from "../types";
-import { lowerCaseDriveLetter, mapAssertionResultToTestId } from "./mapAssertionResultToTestId";
-import { mapJestAssertionToTestDecorations } from "./mapJestAssertionToTestDecorations";
+import _ from 'lodash'
+import type { TestEvent } from 'vscode-test-adapter-api'
+import type { IJestResponse } from '../types'
 import {
-  DescribeNode,
-  FileNode,
-  ProjectRootNode,
-  TestNode,
-} from "./tree";
-import { searchWorkspaceRoot } from "./treeSearch";
+  lowerCaseDriveLetter,
+  mapAssertionResultToTestId,
+} from './mapAssertionResultToTestId'
+import { mapJestAssertionToTestDecorations } from './mapJestAssertionToTestDecorations'
+import type { DescribeNode, FileNode, ProjectRootNode, TestNode } from './tree'
+import { searchWorkspaceRoot } from './treeSearch'
 
-export function mapJestTestResultsToTestEvents(jestResponse: IJestResponse, tree: ProjectRootNode): TestEvent[] {
-  return _.flatMap(jestResponse.results.testResults, fileResult => {
+export function mapJestTestResultsToTestEvents(
+  jestResponse: IJestResponse,
+  tree: ProjectRootNode,
+): TestEvent[] {
+  return _.flatMap(jestResponse.results.testResults, (fileResult) => {
     // TODO we cannot easily tell the difference between when we have failing tests and an error running a test file.
     // Currently we just check if there are any assertionResults.  Ideally it would be better if the status was 'errored'
-    if (fileResult.status === "passed" || fileResult.assertionResults.length > 0) {
+    if (
+      fileResult.status === 'passed' ||
+      fileResult.assertionResults.length > 0
+    ) {
       return fileResult.assertionResults.map(
-        assertionResult =>
+        (assertionResult) =>
           ({
-            decorations: mapJestAssertionToTestDecorations(assertionResult, fileResult.name, jestResponse.reconciler),
+            decorations: mapJestAssertionToTestDecorations(
+              assertionResult,
+              fileResult.name,
+              jestResponse.reconciler,
+            ),
             message:
-              assertionResult.failureMessages?.length > 0 ? assertionResult.failureMessages.join("\n") : undefined,
+              assertionResult.failureMessages?.length > 0
+                ? assertionResult.failureMessages.join('\n')
+                : undefined,
             state: assertionResult.status,
-            test: mapAssertionResultToTestId(assertionResult, fileResult.name, tree.id),
-            type: "test",
-          } as TestEvent),
-      );
+            test: mapAssertionResultToTestId(
+              assertionResult,
+              fileResult.name,
+              tree.id,
+            ),
+            type: 'test',
+          }) as TestEvent,
+      )
     }
 
-    const lowerCaseFileName = lowerCaseDriveLetter(fileResult.name);
+    const lowerCaseFileName = lowerCaseDriveLetter(fileResult.name)
     const matchingFileNode = searchWorkspaceRoot(
       tree,
-      n => (n.type === "file" || n.type === "fileWithParseError") && n.id.endsWith(lowerCaseFileName),
-    );
-    if (!matchingFileNode || matchingFileNode.type !== "file") {
-      return [];
+      (n) =>
+        (n.type === 'file' || n.type === 'fileWithParseError') &&
+        n.id.endsWith(lowerCaseFileName),
+    )
+    if (!matchingFileNode || matchingFileNode.type !== 'file') {
+      return []
     }
 
     return getTests(matchingFileNode).map(
-      t =>
+      (t) =>
         ({
           decorations: [
             {
@@ -49,14 +65,16 @@ export function mapJestTestResultsToTestEvents(jestResponse: IJestResponse, tree
             },
           ],
           message: fileResult.message,
-          state: "errored",
+          state: 'errored',
           test: t.id,
-          type: "test",
-        } as TestEvent),
-    );
-  });
+          type: 'test',
+        }) as TestEvent,
+    )
+  })
 }
 
 const getTests = (file: FileNode | DescribeNode): TestNode[] => {
-  return _.flatMap(file.describeBlocks.map(d => getTests(d))).concat(file.tests);
-};
+  return _.flatMap(file.describeBlocks.map((d) => getTests(d))).concat(
+    file.tests,
+  )
+}
