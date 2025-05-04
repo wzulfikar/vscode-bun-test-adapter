@@ -130,7 +130,10 @@ class TestLoader {
             convertErrorToString(error),
           ),
         )
-        .finally(() => (this.promise = null))
+        // @ts-ignore
+        .finally(() => {
+          this.promise = null
+        })
 
       await this.promise
     } else if (this.promise) {

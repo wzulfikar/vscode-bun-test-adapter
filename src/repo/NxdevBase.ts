@@ -92,8 +92,9 @@ abstract class NxdevBase<T> extends RepoParserBase implements RepoParser {
   }
 }
 
+// @ts-ignore
 const getNxVersion = async (packageJson: JSONSchemaForNPMPackageJsonFiles) => {
-  let nxVersion
+  let nxVersion: string | undefined
 
   if (packageJson.dependencies) {
     nxVersion = packageJson.dependencies['@nrwl/jest']

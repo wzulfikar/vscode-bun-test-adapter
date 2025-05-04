@@ -136,7 +136,7 @@ const filterDescribeBlocks = (
   testNames: string[],
   useRegex: boolean,
 ): DescribeNode[] => {
-  let filteredDescribeBlocks
+  let filteredDescribeBlocks: DescribeNode[] = []
   if (useRegex) {
     const testNamePatterns = testNames.map(
       (testName) => new RegExp(mapTestIdToDescribeIdPattern(testName)),

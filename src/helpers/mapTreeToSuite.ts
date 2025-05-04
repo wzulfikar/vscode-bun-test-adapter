@@ -65,6 +65,7 @@ const flatMapWorkspaceRootToSuite = ({
       // Merge this project's suites into the results.
       const children = results.children.concat(currentChildren)
 
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       return { ...results, children }
     },
     {
